@@ -90,8 +90,14 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
+    .stApp {
+    max-width: 100%;
+    height: 100%;
+    overflow: auto;
+}
 </style>
 """, unsafe_allow_html=True)
+
 
 # Initialize session state
 if 'chat_history' not in st.session_state:
