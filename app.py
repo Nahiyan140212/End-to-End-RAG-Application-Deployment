@@ -13,12 +13,12 @@ from utils.completion import generate_completion
 def handle_api_request():
     """Handle API requests from external applications"""
     try:
-        # Get query parameters
-        query_params = st.experimental_get_query_params()
+        # Get query parameters - using the newer method
+        query_params = st.query_params
         
         # Check if this is an API request
         if 'api' in query_params:
-            api_type = query_params['api'][0]
+            api_type = query_params['api']
             
             if api_type == 'health':
                 # Health check endpoint
@@ -31,8 +31,8 @@ def handle_api_request():
             
             elif api_type == 'chat':
                 # Chat endpoint
-                if st.experimental_get_query_params().get('message'):
-                    message = st.experimental_get_query_params()['message'][0]
+                if 'message' in query_params:
+                    message = query_params['message']
                     
                     # Process the message using your existing RAG system
                     try:
@@ -56,14 +56,20 @@ def handle_api_request():
                             "timestamp": datetime.now().isoformat()
                         })
                         st.stop()
+                else:
+                    # No message provided
+                    st.json({
+                        "error": "Message parameter is required",
+                        "status": "error",
+                        "timestamp": datetime.now().isoformat()
+                    })
+                    st.stop()
     except Exception as e:
         # If there's any error in API handling, continue with normal app
         pass
 
 # Handle API requests first
 handle_api_request()
-
-
 
 # Page configuration
 st.set_page_config(
@@ -288,7 +294,28 @@ st.markdown("""
     .stSpinner {
         color: #63b3ed !important;
     }
+    
+    /* API Status Indicator */
+    .api-status {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #2d3748;
+        color: #63b3ed;
+        padding: 0.5rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        z-index: 1000;
+        border: 1px solid #4a5568;
+    }
 </style>
+""", unsafe_allow_html=True)
+
+# Add API status indicator
+st.markdown("""
+<div class="api-status">
+    🔗 API Ready
+</div>
 """, unsafe_allow_html=True)
 
 # Initialize session state
@@ -304,6 +331,7 @@ st.markdown("""
 <div class="main-header">
     <h1>🤖 Nahiyan's AI Assistant</h1>
     <p>Ask me anything about Nahiyan's background, skills, and projects</p>
+    <p style="font-size: 0.8rem; margin-top: 0.5rem;">✨ Enhanced AI with RAG • API Enabled</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -318,7 +346,7 @@ sample_questions = [
     "What is Nahiyan's background?",
     "What are his technical skills?",
     "What projects has he worked on?",
-    "What are his interests?",
+    "What are his AWS certifications?",
     "How can I contact him?"
 ]
 
@@ -449,7 +477,7 @@ if st.session_state.total_queries > 0:
     duration = (datetime.now() - st.session_state.session_start).seconds // 60
     st.markdown(f"""
     <div class="stats-bar">
-        📊 {st.session_state.total_queries} questions asked • {duration}m session
+        📊 {st.session_state.total_queries} questions asked • {duration}m session • API Active
     </div>
     """, unsafe_allow_html=True)
 
@@ -468,8 +496,37 @@ st.markdown("""
         <h4>🔄 Updated</h4>
         <p>Current information from knowledge base</p>
     </div>
+    <div class="feature-card">
+        <h4>🔗 API Enabled</h4>
+        <p>Accessible via external applications</p>
+    </div>
 </div>
 """, unsafe_allow_html=True)
+
+# API Documentation
+with st.expander("🔧 API Documentation"):
+    st.markdown("""
+    ### API Endpoints
+    
+    **Health Check:**
+    ```
+    GET /?api=health
+    ```
+    
+    **Chat Query:**
+    ```
+    GET /?api=chat&message=your_question_here
+    ```
+    
+    **Response Format:**
+    ```json
+    {
+        "response": "AI response text",
+        "status": "success",
+        "timestamp": "2024-01-01T12:00:00"
+    }
+    ```
+    """)
 
 # JavaScript for Enter key
 st.markdown("""
