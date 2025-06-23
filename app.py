@@ -1,11 +1,69 @@
 import streamlit as st
 import time
+import json
+from urllib.parse import parse_qs
 from datetime import datetime
 from utils.embedding import get_embedding
 from utils.chunking import chunk_text
 from utils.retrieval import load_faiss_index, retrieve_chunks
 from utils.prompt import build_prompt
 from utils.completion import generate_completion
+
+# API endpoint handlers
+def handle_api_request():
+    """Handle API requests from external applications"""
+    try:
+        # Get query parameters
+        query_params = st.experimental_get_query_params()
+        
+        # Check if this is an API request
+        if 'api' in query_params:
+            api_type = query_params['api'][0]
+            
+            if api_type == 'health':
+                # Health check endpoint
+                st.json({
+                    "status": "healthy",
+                    "timestamp": datetime.now().isoformat(),
+                    "service": "Nahiyan AI Assistant"
+                })
+                st.stop()
+            
+            elif api_type == 'chat':
+                # Chat endpoint
+                if st.experimental_get_query_params().get('message'):
+                    message = st.experimental_get_query_params()['message'][0]
+                    
+                    # Process the message using your existing RAG system
+                    try:
+                        index, chunk_mapping = load_faiss_index()
+                        top_chunks = retrieve_chunks(message, index, chunk_mapping)
+                        prompt = build_prompt(top_chunks, message)
+                        response = generate_completion(prompt)
+                        
+                        # Return JSON response
+                        st.json({
+                            "response": response,
+                            "status": "success",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                        st.stop()
+                        
+                    except Exception as e:
+                        st.json({
+                            "error": str(e),
+                            "status": "error",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                        st.stop()
+    except Exception as e:
+        # If there's any error in API handling, continue with normal app
+        pass
+
+# Handle API requests first
+handle_api_request()
+
+
 
 # Page configuration
 st.set_page_config(
